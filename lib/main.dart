@@ -12,6 +12,7 @@ import 'package:flexify/timer/timer_page.dart';
 import 'package:flexify/timer/timer_progress_widgets.dart';
 import 'package:flexify/timer/timer_state.dart';
 import 'package:flexify/utils.dart';
+import 'package:flexify/ai_chat_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -170,6 +171,7 @@ class _HomePageState extends State<HomePage> {
     final tabsSetting = context
         .select<SettingsState, String>((settings) => settings.value.tabs);
     final tabs = tabsSetting.split(',');
+    if (!tabs.contains('AiChatPage')) tabs.add('AiChatPage');
 
     return DefaultTabController(
       length: tabs.length,
@@ -190,6 +192,8 @@ class _HomePageState extends State<HomePage> {
                 return const TimerPage();
               else if (tab == 'SettingsPage')
                 return const SettingsPage();
+              else if (tab == 'AiChatPage')
+                return const AiChatPage();
               else
                 return ErrorWidget("Couldn't build tab content.");
             }).toList(),
@@ -235,6 +239,14 @@ class _HomePageState extends State<HomePage> {
                   child: const Tab(
                     icon: Icon(Icons.settings),
                     text: "Settings",
+                  ),
+                );
+              else if (tab == 'AiChatPage')
+                return GestureDetector(
+                  onLongPress: () => hideTab(context, 'AiChatPage'),
+                  child: const Tab(
+                    icon: Icon(Icons.smart_toy_outlined),
+                    text: "AI Coach",
                   ),
                 );
               else
