@@ -49,7 +49,7 @@ class _AiChatPageState extends State<AiChatPage> {
         'Authorization': 'Bearer $apiKey',
       },
       body: jsonEncode({
-        'model': 'gpt-4',
+        'model': 'gpt-3.5-turbo',
         'messages': [
           {
             'role': 'system',
@@ -60,7 +60,7 @@ class _AiChatPageState extends State<AiChatPage> {
             'content': prompt
           },
         ],
-        'temperature': 0.7,
+        'temperature': 0.3,
       }),
     );
 
