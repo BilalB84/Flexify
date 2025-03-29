@@ -1,71 +1,99 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+class AiChatPage extends StatefulWidget {
+  const AiChatPage({Key? key}) : super(key: key);
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  State<AiChatPage> createState() => _AiChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _AiChatPageState extends State<AiChatPage> {
   final TextEditingController _controller = TextEditingController();
-  final List<_Message> _messages = [];
+  final List<ChatMessage> _messages = [];
 
   @override
   void initState() {
     super.initState();
-    _addAIMessage(
-      "Hi! I'm your virtual personal trainer. Let's design a great workout together. What is your goal? (e.g. strength, weight loss, flexibility...)",
-    );
+    _sendMessage("Hi, I'm your AI fitness coach. Can you tell me your fitness goal, your current level of experience, and how many days per week you'd like to train?");
   }
 
-  void _addAIMessage(String text) {
+  void _sendMessage(String text) async {
     setState(() {
-      _messages.add(_Message(text: text, isUser: false));
+      _messages.add(ChatMessage(text: text, isUser: true));
     });
-  }
 
-  void _addUserMessage(String text) {
-    setState(() {
-      _messages.add(_Message(text: text, isUser: true));
-    });
+    try {
+      final response = await fetchChatResponse(text);
+      setState(() {
+        _messages.add(ChatMessage(text: response, isUser: false));
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(text: "Oops, something went wrong.", isUser: false));
+      });
+    }
+
     _controller.clear();
-    // Simulated AI response
-    Future.delayed(const Duration(milliseconds: 600), () {
-      _addAIMessage("Thanks for sharing! Based on your goal, I can suggest a tailored workout plan.");
-    });
+  }
+
+  Future<String> fetchChatResponse(String prompt) async {
+    const apiKey = 'YOUR_OPENAI_API_KEY'; // Replace with your OpenAI API Key
+    const endpoint = 'https://api.openai.com/v1/chat/completions';
+
+    final response = await http.post(
+      Uri.parse(endpoint),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: jsonEncode({
+        'model': 'gpt-4',
+        'messages': [
+          {
+            'role': 'system',
+            'content': 'You are a helpful AI fitness coach. Ask the user what their goals and experience are, then suggest exercises and workout plans based on that.'
+          },
+          {
+            'role': 'user',
+            'content': prompt
+          },
+        ],
+        'temperature': 0.7,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['choices'][0]['message']['content'];
+    } else {
+      print('OpenAI API error: ${response.body}');
+      throw Exception('Failed to fetch response from OpenAI');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('AI Coach Chat'),
-      ),
+      appBar: AppBar(title: const Text('AI Coach')),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return Align(
-                  alignment:
-                      message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                return Container(
+                  alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12.0),
                     decoration: BoxDecoration(
-                      color: message.isUser ? Colors.blueAccent : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(16),
+                      color: message.isUser ? Colors.blue[100] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
-                    child: Text(
-                      message.text,
-                      style: TextStyle(
-                        color: message.isUser ? Colors.white : Colors.black,
-                      ),
-                    ),
+                    child: Text(message.text),
                   ),
                 );
               },
@@ -78,34 +106,26 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Type your message...',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(hintText: 'Type your message...'),
+                    onSubmitted: (text) => _sendMessage(text),
                   ),
                 ),
-                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.send),
-                  onPressed: () {
-                    final text = _controller.text.trim();
-                    if (text.isNotEmpty) {
-                      _addUserMessage(text);
-                    }
-                  },
+                  onPressed: () => _sendMessage(_controller.text),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 }
 
-class _Message {
+class ChatMessage {
   final String text;
   final bool isUser;
 
-  _Message({required this.text, required this.isUser});
+  ChatMessage({required this.text, required this.isUser});
 }
