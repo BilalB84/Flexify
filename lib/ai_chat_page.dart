@@ -60,7 +60,7 @@ class _AiChatPageState extends State<AiChatPage> {
             'content': prompt
           },
         ],
-        'temperature': 0.3,
+        'temperature': 0.2,
       }),
     );
 
